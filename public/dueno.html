@@ -6,6 +6,8 @@
     <title>Panel del Dueño - Panadería</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         body { background-color: #0f172a; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #f8fafc; }
         .card-custom { border-radius: 12px; border: 1px solid #334155; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
@@ -18,16 +20,89 @@
         .table-dark-custom td { border-bottom: 1px solid #334155; }
         .info-cliente-box { background: #0f172a; border-radius: 8px; padding: 8px 12px; border-left: 3px solid #38bdf8; }
         .telefono-resaltado { color: #facc15; font-weight: 700; font-size: 0.95rem; }
+
+        /* --- Capa de bloqueo y Ventana Emergente --- */
+        #bloqueoServicioOverlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: rgba(15, 23, 42, 0.92);
+            backdrop-filter: blur(10px);
+            z-index: 9999;
+            align-items: center;
+            justify-content: center;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        .modal-bloqueo {
+            background: #1e293b;
+            border: 2px solid #ef4444;
+            border-radius: 20px;
+            max-width: 440px;
+            width: 90%;
+            padding: 2.5rem 2rem;
+            box-shadow: 0 0 35px rgba(239, 68, 68, 0.25);
+            text-align: center;
+            position: relative;
+            transform: scale(0.98);
+            animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        .icon-box-alert {
+            width: 75px;
+            height: 75px;
+            background: rgba(239, 68, 68, 0.15);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1.2rem auto;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes popIn {
+            to { transform: scale(1); }
+        }
     </style>
 </head>
 <body class="p-3 p-md-4">
+
+    <!-- Capa de Bloqueo Transparente con Modal -->
+    <div id="bloqueoServicioOverlay">
+        <div class="modal-bloqueo">
+            <div class="icon-box-alert">
+                <i class="bi bi-shield-lock-fill text-danger fs-1"></i>
+            </div>
+            <h3 class="fw-bold text-white mb-2">Servicio Suspendido</h3>
+            <p class="text-secondary small mb-4">
+                El acceso a la plataforma ha sido pausado. Si eres el dueño del establecimiento, ingresa el código de desbloqueo proporcionado por el desarrollador para restaurar el servicio.
+            </p>
+            <div class="mb-3">
+                <input type="password" id="inputCodigoReactivacion" class="form-control text-center bg-dark text-white border-secondary py-2 fs-5" placeholder="• • • • • •" style="letter-spacing: 4px;">
+            </div>
+            <button class="btn btn-danger w-100 fw-bold py-2.5 shadow" onclick="reactivarServicio()">
+                <i class="bi bi-key-fill me-2"></i>Desbloquear Sistema
+            </button>
+            <div id="msgErrorCodigo" class="text-danger small mt-3 d-none">
+                <i class="bi bi-exclamation-circle-fill me-1"></i>Código incorrecto. Verifica e inténtalo nuevamente.
+            </div>
+        </div>
+    </div>
 
     <div class="container-fluid">
         <!-- Encabezado -->
         <div class="header-dueno p-4 mb-4 d-flex justify-content-between align-items-center shadow-sm">
             <div>
                 <h2 class="fw-bold mb-1 text-white"><i class="bi bi-shop text-warning me-2"></i>Panel de Control del Dueño</h2>
-                <p class="text-muted mb-0 small">Panadería El Buen Pan — Gestión Operativa</p>
+                <p class="text-muted mb-0 small">Panadería El Buen Pan — Gestión Operativa en Tiempo Real (1s)</p>
             </div>
             <button class="btn btn-outline-light btn-sm fw-semibold" onclick="cargarTodo()"><i class="bi bi-arrow-clockwise me-1"></i>Actualizar Vista</button>
         </div>
@@ -72,7 +147,7 @@
             </div>
         </div>
 
-        <!-- Módulo Desplegable: Historial de Cierres de Caja -->
+        <!-- Historial de Cierres -->
         <div class="collapse mb-4" id="collapseCierres">
             <div class="card card-custom card-menu p-4 border-start border-4 border-primary">
                 <h5 class="fw-bold text-white mb-3"><i class="bi bi-clock-history text-primary me-2"></i>Historial Consolidado de Cierres</h5>
@@ -97,7 +172,7 @@
         </div>
 
         <div class="row g-4">
-            <!-- Columna Izquierda: Gestión de Productos del Menú -->
+            <!-- Gestión de Productos del Menú -->
             <div class="col-lg-5">
                 <div class="card card-custom card-menu p-4 mb-4">
                     <h5 class="fw-bold text-white mb-3"><i class="bi bi-plus-circle text-info me-2"></i>Agregar Producto al Menú</h5>
@@ -118,7 +193,6 @@
                     </form>
                 </div>
 
-                <!-- Lista de Productos Existentes -->
                 <div class="card card-custom card-menu p-4">
                     <h5 class="fw-bold text-white mb-3"><i class="bi bi-list-stars text-warning me-2"></i>Catálogo Activo</h5>
                     <div id="listaProductos" class="list-group list-group-flush">
@@ -127,7 +201,7 @@
                 </div>
             </div>
 
-            <!-- Columna Derecha: Pedidos Registrados y Cierre de Caja -->
+            <!-- Pedidos Registrados -->
             <div class="col-lg-7">
                 <div class="card card-custom card-pedidos p-4">
                     <div class="d-flex justify-content-between align-items-center mb-3">
@@ -160,22 +234,68 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+        let cacheEstadoServicio = null;
+        let cacheProductos = null;
+        let cachePedidos = null;
+        let cacheCierres = null;
+
         async function obtenerEstadoServicio() {
             try {
                 const res = await fetch('/api/estado-servicio');
                 const data = await res.json();
+                
+                const dataString = JSON.stringify(data);
+                if (dataString === cacheEstadoServicio) return;
+                cacheEstadoServicio = dataString;
+
                 const badge = document.getElementById('badgeEstadoServicio');
+                const overlay = document.getElementById('bloqueoServicioOverlay');
+
                 if (data.estado === 'activo') {
                     badge.className = 'badge bg-success fs-6';
                     badge.textContent = 'Servicio Activo';
+                    overlay.style.display = 'none';
                 } else if (data.estado === 'advertencia') {
                     badge.className = 'badge bg-warning text-dark fs-6';
                     badge.textContent = 'Pago Próximo a Vencer';
+                    overlay.style.display = 'none';
                 } else {
                     badge.className = 'badge bg-danger fs-6';
                     badge.textContent = 'Servicio Suspendido';
+                    overlay.style.display = 'flex';
                 }
             } catch (err) { console.error(err); }
+        }
+
+        async function reactivarServicio() {
+            const codigo = document.getElementById('inputCodigoReactivacion').value;
+            const msgError = document.getElementById('msgErrorCodigo');
+            msgError.classList.add('d-none');
+
+            try {
+                const res = await fetch('/api/estado-servicio/reactivar', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ codigo })
+                });
+                const data = await res.json();
+
+                if (res.ok && data.exito) {
+                    document.getElementById('inputCodigoReactivacion').value = '';
+                    cacheEstadoServicio = null;
+                    obtenerEstadoServicio();
+                } else {
+                    msgError.classList.remove('d-none');
+                }
+            } catch (err) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error de conexión',
+                    text: 'No se pudo verificar el código de desbloqueo.',
+                    background: '#1e293b',
+                    color: '#f8fafc'
+                });
+            }
         }
 
         async function cargarComisiones() {
@@ -191,6 +311,11 @@
             try {
                 const res = await fetch('/api/productos');
                 const productos = await res.json();
+
+                const productosString = JSON.stringify(productos);
+                if (productosString === cacheProductos) return;
+                cacheProductos = productosString;
+
                 const cont = document.getElementById('listaProductos');
 
                 if (!productos || productos.length === 0) {
@@ -229,25 +354,88 @@
                 const data = await res.json();
                 if (res.ok) {
                     document.getElementById('formProducto').reset();
+                    cacheProductos = null;
                     cargarProductos();
+                    Swal.fire({
+                        icon: 'success',
+                        title: '¡Producto Agregado!',
+                        text: 'El producto fue guardado con éxito en el menú.',
+                        background: '#1e293b',
+                        color: '#f8fafc',
+                        confirmButtonColor: '#3b82f6',
+                        timer: 2000,
+                        showConfirmButton: false
+                    });
                 } else {
-                    alert("Error: " + (data.error || "No se pudo guardar el producto"));
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: data.error || "No se pudo guardar el producto",
+                        background: '#1e293b',
+                        color: '#f8fafc'
+                    });
                 }
-            } catch (err) { alert("Error al subir el producto."); }
+            } catch (err) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error de conexión',
+                    text: 'Error al subir el producto.',
+                    background: '#1e293b',
+                    color: '#f8fafc'
+                });
+            }
         }
 
         async function eliminarProducto(id) {
-            if (!confirm("¿Deseas eliminar este producto del menú?")) return;
+            const confirmacion = await Swal.fire({
+                title: '¿Eliminar producto?',
+                text: 'Esta acción removerá el producto del menú activo.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#ef4444',
+                cancelButtonColor: '#64748b',
+                confirmButtonText: 'Sí, eliminar',
+                cancelButtonText: 'Cancelar',
+                background: '#1e293b',
+                color: '#f8fafc'
+            });
+
+            if (!confirmacion.isConfirmed) return;
+
             try {
                 const res = await fetch(`/api/productos/${id}`, { method: 'DELETE' });
-                if (res.ok) cargarProductos();
-            } catch (err) { alert("Error al eliminar."); }
+                if (res.ok) {
+                    cacheProductos = null;
+                    cargarProductos();
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Producto Eliminado',
+                        background: '#1e293b',
+                        color: '#f8fafc',
+                        timer: 1500,
+                        showConfirmButton: false
+                    });
+                }
+            } catch (err) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Error al eliminar el producto.',
+                    background: '#1e293b',
+                    color: '#f8fafc'
+                });
+            }
         }
 
         async function cargarPedidos() {
             try {
                 const res = await fetch('/api/pedidos');
                 const pedidos = await res.json();
+
+                const pedidosString = JSON.stringify(pedidos);
+                if (pedidosString === cachePedidos) return;
+                cachePedidos = pedidosString;
+
                 const tbody = document.getElementById('tablaPedidos');
 
                 if (!pedidos || pedidos.length === 0) {
@@ -255,11 +443,12 @@
                     return;
                 }
 
-                // Invertir arreglo para mostrar el pedido más reciente arriba
-                const pedidosOrdenados = [...pedidos].reverse();
+                const pedidosOrdenados = pedidos;
 
                 tbody.innerHTML = pedidosOrdenados.map(p => {
                     const itemsText = Array.isArray(p.items) ? p.items.join(', ') : 'Sin detalle';
+                    const esCancelado = p.estado === 'Cancelado';
+                    const esEntregado = p.estado === 'Entregado';
                     
                     let infoClienteHtml = '<span class="text-muted">Mesa / Mostrador</span>';
                     if (p.cliente) {
@@ -274,17 +463,21 @@
                         }
                     }
 
+                    let badgeEstado = `<span class="badge bg-warning text-dark">${p.estado}</span>`;
+                    if (esEntregado) badgeEstado = `<span class="badge bg-success">${p.estado}</span>`;
+                    if (esCancelado) badgeEstado = `<span class="badge bg-danger text-white"><i class="bi bi-x-circle-fill me-1"></i>CANCELADO POR EL CLIENTE</span>`;
+
+                    let accionHtml = `<button class="btn btn-sm btn-outline-success" onclick="cambiarEstadoPedido('${p._id}', 'Entregado')">Marcar Entregado</button>`;
+                    if (esEntregado) accionHtml = `<i class="bi bi-check-all text-success fs-5"></i>`;
+                    if (esCancelado) accionHtml = `<span class="badge bg-secondary">Inactivo</span>`;
+
                     return `
-                        <tr>
+                        <tr class="${esCancelado ? 'opacity-50 table-danger' : ''}">
                             <td>${infoClienteHtml}</td>
                             <td class="small text-slate-300">${itemsText}</td>
-                            <td class="fw-bold text-success">$${Number(p.total || 0).toLocaleString('es-CO')}</td>
-                            <td>
-                                <span class="badge ${p.estado === 'Entregado' ? 'bg-success' : 'bg-warning text-dark'}">${p.estado}</span>
-                            </td>
-                            <td>
-                                ${p.estado !== 'Entregado' ? `<button class="btn btn-sm btn-outline-success" onclick="cambiarEstadoPedido('${p._id}', 'Entregado')">Marcar Entregado</button>` : '<i class="bi bi-check-all text-success fs-5"></i>'}
-                            </td>
+                            <td class="fw-bold ${esCancelado ? 'text-muted' : 'text-success'}">$${Number(p.total || 0).toLocaleString('es-CO')}</td>
+                            <td>${badgeEstado}</td>
+                            <td>${accionHtml}</td>
                         </tr>
                     `;
                 }).join('');
@@ -299,30 +492,79 @@
                     body: JSON.stringify({ estado: nuevoEstado })
                 });
                 if (res.ok) {
+                    cachePedidos = null;
                     cargarPedidos();
                     cargarComisiones();
                 }
-            } catch (err) { alert("Error al actualizar pedido."); }
+            } catch (err) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Error al actualizar el estado del pedido.',
+                    background: '#1e293b',
+                    color: '#f8fafc'
+                });
+            }
         }
 
         async function procesarCierreCaja() {
-            if (!confirm("¿Deseas realizar el cierre de caja? Esto guardará el resumen diario y limpiará la pantalla de pedidos.")) return;
+            const confirmacion = await Swal.fire({
+                title: '¿Realizar Cierre de Caja?',
+                text: 'Esto guardará el resumen diario y limpiará los pedidos completados de la pantalla.',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#10b981',
+                cancelButtonColor: '#64748b',
+                confirmButtonText: 'Sí, cerrar caja',
+                cancelButtonText: 'Cancelar',
+                background: '#1e293b',
+                color: '#f8fafc'
+            });
+
+            if (!confirmacion.isConfirmed) return;
+
             try {
                 const res = await fetch('/api/cierres/procesar', { method: 'POST' });
                 const data = await res.json();
                 if (data.exito) {
-                    alert(data.mensaje);
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Cierre Exitoso',
+                        text: data.mensaje,
+                        background: '#1e293b',
+                        color: '#f8fafc',
+                        confirmButtonColor: '#3b82f6'
+                    });
                     cargarTodo();
                 } else {
-                    alert("Error: " + data.error);
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: data.error,
+                        background: '#1e293b',
+                        color: '#f8fafc'
+                    });
                 }
-            } catch (err) { alert("Error al procesar el cierre."); }
+            } catch (err) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error de conexión',
+                    text: 'No se pudo procesar el cierre.',
+                    background: '#1e293b',
+                    color: '#f8fafc'
+                });
+            }
         }
 
         async function cargarCierres() {
             try {
                 const res = await fetch('/api/cierres');
                 const cierres = await res.json();
+
+                const cierresString = JSON.stringify(cierres);
+                if (cierresString === cacheCierres) return;
+                cacheCierres = cierresString;
+
                 const tbody = document.getElementById('tablaCierres');
                 document.getElementById('txtTotalCierres').textContent = cierres.length;
 
@@ -355,16 +597,53 @@
         }
 
         async function eliminarCierre(id) {
-            if (!confirm("¿Estás seguro de borrar este registro del historial de cierres?")) return;
+            const confirmacion = await Swal.fire({
+                title: '¿Borrar registro de cierre?',
+                text: 'Esta acción borrará este registro del historial consolidado.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#ef4444',
+                cancelButtonColor: '#64748b',
+                confirmButtonText: 'Sí, borrar',
+                cancelButtonText: 'Cancelar',
+                background: '#1e293b',
+                color: '#f8fafc'
+            });
+
+            if (!confirmacion.isConfirmed) return;
+
             try {
                 const res = await fetch(`/api/cierres/${id}`, { method: 'DELETE' });
                 const data = await res.json();
                 if (res.ok && data.exito) {
+                    cacheCierres = null;
                     cargarCierres();
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Registro Eliminado',
+                        background: '#1e293b',
+                        color: '#f8fafc',
+                        timer: 1500,
+                        showConfirmButton: false
+                    });
                 } else {
-                    alert("Error al eliminar cierre: " + (data.error || "No autorizado"));
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: data.error || "No autorizado",
+                        background: '#1e293b',
+                        color: '#f8fafc'
+                    });
                 }
-            } catch (err) { alert("Error al eliminar cierre."); }
+            } catch (err) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Error al eliminar el registro de cierre.',
+                    background: '#1e293b',
+                    color: '#f8fafc'
+                });
+            }
         }
 
         function cargarTodo() {
@@ -375,7 +654,10 @@
             cargarCierres();
         }
 
-        document.addEventListener('DOMContentLoaded', cargarTodo);
+        document.addEventListener('DOMContentLoaded', () => {
+            cargarTodo();
+            setInterval(cargarTodo, 1000);
+        });
     </script>
 </body>
 </html>

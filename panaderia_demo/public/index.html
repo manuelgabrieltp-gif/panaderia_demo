@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Panadería El Buen Pan - Pedidos</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+  <style>
+    body {
+      background-color: #121212;
+      color: #e0e0e0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      padding-bottom: 80px;
+    }
+    .navbar {
+      background-color: #1f1f1f;
+      border-bottom: 2px solid #ff9800;
+    }
+    .card-product {
+      background-color: #1e1e1e;
+      border: 1px solid #333;
+      border-radius: 12px;
+      overflow: hidden;
+      transition: transform 0.2s;
+    }
+    .card-product:hover {
+      transform: translateY(-3px);
+    }
+    .card-product img {
+      height: 160px;
+      object-fit: cover;
+      width: 100%;
+    }
+    .status-card {
+      background-color: #1e1e1e;
+      border: 1px solid #333;
+      border-radius: 16px;
+      padding: 24px;
+    }
+    .floating-cart {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      z-index: 1000;
+    }
+  </style>
+</head>
+<body>
+
+  <nav class="navbar navbar-dark px-3 py-2 sticky-top">
+    <div class="container d-flex justify-content-between align-items-center">
+      <span class="navbar-brand fw-bold text-warning">
+        <i class="bi bi-shop me-2"></i>El Buen Pan
+      </span>
+      <button class="btn btn-outline-warning btn-sm" id="btn-ver-estado" onclick="verificarPedidoActivo()" style="display: none;">
+        <i class="bi bi-clock-history me-1"></i> Ver mi Pedido
+      </button>
+    </div>
+  </nav>
+
+  <div class="container my-4" id="seccion-menu">
+    <h4 class="fw-bold mb-3"><i class="bi bi-journal-richtext text-warning me-2"></i>Nuestro Menú</h4>
+    <div id="contenedor-productos" class="row g-3">
+      <!-- Carga dinámica -->
+    </div>
+  </div>
+
+  <!-- MODAL CARRITO / CHECKOUT -->
+  <div class="modal fade" id="modalCarrito" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content bg-dark text-white border-secondary">
+        <div class="modal-header border-secondary">
+          <h5 class="modal-title text-warning"><i class="bi bi-cart3 me-2"></i>Confirmar Pedido</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div id="items-carrito" class="mb-3"></div>
+          <hr class="border-secondary">
+          <div class="d-flex justify-content-between fw-bold fs-5 mb-3">
+            <span>Total:</span>
+            <span class="text-success" id="total-carrito">$0</span>
+          </div>
+
+          <h6 class="text-warning">Datos de Envío:</h6>
+          <div class="mb-2">
+            <input type="text" class="form-control bg-secondary text-white border-0" id="cliente-nombre" placeholder="Tu Nombre Completo">
+          </div>
+          <div class="mb-2">
+            <input type="tel" class="form-control bg-secondary text-white border-0" id="cliente-telefono" placeholder="Número de Teléfono">
+          </div>
+          <div class="mb-3">
+            <input type="text" class="form-control bg-secondary text-white border-0" id="cliente-direccion" placeholder="Dirección / Mesa">
+          </div>
+        </div>
+        <div class="modal-footer border-secondary">
+          <button type="button" class="btn btn-outline-light" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" class="btn btn-warning fw-bold" onclick="enviarPedido()">Enviar Pedido</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- VISTA DE SEGUIMIENTO EN VIVO -->
+  <div class="container my-5" id="seccion-seguimiento" style="display: none;">
+    <div class="row justify-content-center">
+      <div class="col-md-8 col-lg-6">
+        <div class="status-card text-center">
+          <div id="icono-estado" class="fs-1 mb-2"></div>
+          <h3 id="titulo-estado" class="fw-bold mb-2"></h3>
+          <p id="descripcion-estado" class="text-muted mb-4"></p>
+
+          <div class="p-3 bg-black rounded border border-secondary text-start mb-4">
+            <div class="d-flex justify-content-between mb-2">
+              <small class="text-muted">ID de Pedido:</small>
+              <small class="font-monospace text-warning" id="pedido-id-text"></small>
+            </div>
+            <div id="pedido-resumen-items" class="small mb-2"></div>
+            <div class="d-flex justify-content-between fw-bold border-top border-secondary pt-2">
+              <span>Total a pagar:</span>
+              <span class="text-success" id="pedido-total-text"></span>
+            </div>
+          </div>
+
+          <div id="acciones-pedido">
+            <!-- Botón dinámico de cancelación -->
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Botón flotante del carrito -->
+  <div class="floating-cart" id="btn-flotante-carrito" style="display: none;">
+    <button class="btn btn-warning btn-lg rounded-circle shadow-lg position-relative" onclick="abrirCarrito()">
+      <i class="bi bi-cart-fill fs-4"></i>
+      <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="badge-count">0</span>
+    </button>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    let carrito = [];
+    let productos = [];
+    let modalCarritoObj = null;
+
+    document.addEventListener('DOMContentLoaded', () => {
+      modalCarritoObj = new bootstrap.Modal(document.getElementById('modalCarrito'));
+      cargarProductos();
+      verificarPedidoActivo();
+      setInterval(actualizarEstadoTracking, 3000);
+    });
+
+    async function cargarProductos() {
+      try {
+        const res = await fetch('/api/productos');
+        productos = await res.json();
+        const contenedor = document.getElementById('contenedor-productos');
+        
+        if(productos.length === 0) {
+          contenedor.innerHTML = '<div class="col-12 text-center text-muted">No hay productos disponibles por ahora.</div>';
+          return;
+        }
+
+        contenedor.innerHTML = productos.map(p => `
+          <div class="col-6 col-md-4 col-lg-3">
+            <div class="card card-product h-100">
+              <img src="${p.imagen}" alt="${p.nombre}">
+              <div class="card-body p-2 d-flex flex-column justify-content-between">
+                <div>
+                  <h6 class="card-title text-white mb-1">${p.nombre}</h6>
+                  <p class="text-success fw-bold mb-2">$${Number(p.precio).toLocaleString('es-CO')}</p>
+                </div>
+                <button class="btn btn-warning btn-sm w-100 fw-bold" onclick="agregarAlCarrito('${p._id}')">
+                  <i class="bi bi-plus-lg me-1"></i>Agregar
+                </button>
+              </div>
+            </div>
+          </div>
+        `).join('');
+      } catch (e) {
+        console.error("Error al cargar productos:", e);
+      }
+    }
+
+    function agregarAlCarrito(id) {
+      const prod = productos.find(p => p._id === id);
+      if(!prod) return;
+      carrito.push(prod);
+      actualizarCarritoUI();
+    }
+
+    function actualizarCarritoUI() {
+      const btnFlotante = document.getElementById('btn-flotante-carrito');
+      const badge = document.getElementById('badge-count');
+      
+      if(carrito.length > 0) {
+        btnFlotante.style.display = 'block';
+        badge.innerText = carrito.length;
+      } else {
+        btnFlotante.style.display = 'none';
+      }
+    }
+
+    function abrirCarrito() {
+      const contenedor = document.getElementById('items-carrito');
+      let total = 0;
+
+      contenedor.innerHTML = carrito.map((p, index) => {
+        total += Number(p.precio);
+        return `
+          <div class="d-flex justify-content-between align-items-center mb-2 bg-secondary bg-opacity-25 p-2 rounded">
+            <div>
+              <div class="fw-bold">${p.nombre}</div>
+              <small class="text-success">$${Number(p.precio).toLocaleString('es-CO')}</small>
+            </div>
+            <button class="btn btn-outline-danger btn-sm" onclick="quitarDelCarrito(${index})"><i class="bi bi-trash"></i></button>
+          </div>
+        `;
+      }).join('');
+
+      document.getElementById('total-carrito').innerText = `$${total.toLocaleString('es-CO')}`;
+      modalCarritoObj.show();
+    }
+
+    function quitarDelCarrito(index) {
+      carrito.splice(index, 1);
+      actualizarCarritoUI();
+      if(carrito.length === 0) {
+        modalCarritoObj.hide();
+      } else {
+        abrirCarrito();
+      }
+    }
+
+    async function enviarPedido() {
+      const nombre = document.getElementById('cliente-nombre').value.trim();
+      const telefono = document.getElementById('cliente-telefono').value.trim();
+      const direccion = document.getElementById('cliente-direccion').value.trim();
+
+      if(!nombre || !telefono) {
+        alert("Por favor ingresa tu nombre y teléfono.");
+        return;
+      }
+
+      const total = carrito.reduce((sum, p) => sum + Number(p.precio), 0);
+      const itemsFormatted = carrito.map(p => p.nombre);
+
+      const payload = {
+        items: itemsFormatted,
+        total: total,
+        cliente: { nombre, telefono, direccion }
+      };
+
+      try {
+        const res = await fetch('/api/pedidos', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await res.json();
+        if(res.ok && data.pedido) {
+          localStorage.setItem('mi_pedido_id', data.pedido._id);
+          carrito = [];
+          actualizarCarritoUI();
+          modalCarritoObj.hide();
+          verificarPedidoActivo();
+        } else {
+          alert(data.error || "No se pudo registrar el pedido.");
+        }
+      } catch (e) {
+        alert("Error de red al enviar el pedido.");
+      }
+    }
+
+    async function verificarPedidoActivo() {
+      const pedidoId = localStorage.getItem('mi_pedido_id');
+      const btnEstado = document.getElementById('btn-ver-estado');
+      
+      if(!pedidoId) {
+        document.getElementById('seccion-menu').style.display = 'block';
+        document.getElementById('seccion-seguimiento').style.display = 'none';
+        btnEstado.style.display = 'none';
+        return;
+      }
+
+      btnEstado.style.display = 'inline-block';
+      await actualizarEstadoTracking();
+    }
+
+    async function actualizarEstadoTracking() {
+      const pedidoId = localStorage.getItem('mi_pedido_id');
+      if(!pedidoId) return;
+
+      try {
+        const res = await fetch(`/api/pedidos/${pedidoId}`);
+        if(!res.ok) {
+          localStorage.removeItem('mi_pedido_id');
+          verificarPedidoActivo();
+          return;
+        }
+
+        const pedido = await res.json();
+        
+        document.getElementById('seccion-menu').style.display = 'none';
+        document.getElementById('seccion-seguimiento').style.display = 'block';
+
+        document.getElementById('pedido-id-text').innerText = pedido._id;
+        document.getElementById('pedido-total-text').innerText = `$${Number(pedido.total).toLocaleString('es-CO')}`;
+        document.getElementById('pedido-resumen-items').innerText = Array.isArray(pedido.items) ? pedido.items.join(', ') : '';
+
+        const icono = document.getElementById('icono-estado');
+        const titulo = document.getElementById('titulo-estado');
+        const desc = document.getElementById('descripcion-estado');
+        const acciones = document.getElementById('acciones-pedido');
+
+        if(pedido.estado === 'Pendiente') {
+          icono.innerHTML = `<i class="bi bi-hourglass-split text-warning"></i>`;
+          titulo.innerText = "¡Pedido en Preparación!";
+          titulo.className = "fw-bold mb-2 text-warning";
+          desc.innerText = "El dueño ya ha recibido tu pedido y está alistándolo.";
+          acciones.innerHTML = `
+            <button class="btn btn-outline-danger w-100 fw-bold" onclick="cancelarMiPedido('${pedido._id}')">
+              <i class="bi bi-x-circle me-1"></i> Cancelar Pedido
+            </button>
+          `;
+        } else if(pedido.estado === 'Entregado') {
+          icono.innerHTML = `<i class="bi bi-check-circle-fill text-success"></i>`;
+          titulo.innerText = "¡Pedido Entregado!";
+          titulo.className = "fw-bold mb-2 text-success";
+          desc.innerText = "¡Gracias por tu compra! Esperamos que lo disfrutes.";
+          acciones.innerHTML = `
+            <button class="btn btn-warning w-100 fw-bold" onclick="nuevoPedido()">
+              <i class="bi bi-plus-circle me-1"></i> Hacer Otro Pedido
+            </button>
+          `;
+        } else if(pedido.estado === 'Cancelado') {
+          icono.innerHTML = `<i class="bi bi-x-octagon-fill text-danger"></i>`;
+          titulo.innerText = "Pedido Cancelado";
+          titulo.className = "fw-bold mb-2 text-danger";
+          desc.innerText = "Has cancelado este pedido.";
+          acciones.innerHTML = `
+            <button class="btn btn-outline-warning w-100 fw-bold" onclick="nuevoPedido()">
+              <i class="bi bi-arrow-left me-1"></i> Volver al Menú
+            </button>
+          `;
+        }
+
+      } catch (e) {
+        console.error("Error consultando estado:", e);
+      }
+    }
+
+    async function cancelarMiPedido(id) {
+      if(!confirm("¿Estás seguro de que deseas cancelar este pedido?")) return;
+
+      try {
+        const res = await fetch(`/api/pedidos/${id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ estado: 'Cancelado' })
+        });
+
+        if(res.ok) {
+          actualizarEstadoTracking();
+        } else {
+          alert("No se pudo cancelar el pedido.");
+        }
+      } catch (e) {
+        alert("Error al conectar con el servidor.");
+      }
+    }
+
+    function nuevoPedido() {
+      localStorage.removeItem('mi_pedido_id');
+      document.getElementById('seccion-menu').style.display = 'block';
+      document.getElementById('seccion-seguimiento').style.display = 'none';
+      document.getElementById('btn-ver-estado').style.display = 'none';
+    }
+  </script>
+</body>
+</html>

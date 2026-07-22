@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel del Dueño - Panadería</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <style>
+        body { background-color: #0f172a; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #f8fafc; }
+        .card-custom { border-radius: 12px; border: 1px solid #334155; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+        .card-menu { background: #1e293b; color: #f8fafc; }
+        .card-pedidos { background: #182232; border-top: 4px solid #10b981; }
+        .header-dueno { background: linear-gradient(135deg, #1e293b, #0f172a); border: 1px solid #334155; color: white; border-radius: 12px; }
+        .img-producto { width: 50px; height: 50px; object-fit: cover; border-radius: 8px; border: 1px solid #475569; }
+        .table-dark-custom { background-color: #0f172a; color: #e2e8f0; }
+        .table-dark-custom th { background-color: #1e293b; color: #94a3b8; border-bottom: 2px solid #334155; }
+        .table-dark-custom td { border-bottom: 1px solid #334155; }
+        .info-cliente-box { background: #0f172a; border-radius: 8px; padding: 8px 12px; border-left: 3px solid #38bdf8; }
+        .telefono-resaltado { color: #facc15; font-weight: 700; font-size: 0.95rem; }
+
+        /* --- Capa de bloqueo y Ventana Emergente Mejorada --- */
+        #bloqueoServicioOverlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: rgba(15, 23, 42, 0.92);
+            backdrop-filter: blur(10px);
+            z-index: 9999;
+            align-items: center;
+            justify-content: center;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        .modal-bloqueo {
+            background: #1e293b;
+            border: 2px solid #ef4444;
+            border-radius: 20px;
+            max-width: 440px;
+            width: 90%;
+            padding: 2.5rem 2rem;
+            box-shadow: 0 0 35px rgba(239, 68, 68, 0.25);
+            text-align: center;
+            position: relative;
+            transform: scale(0.98);
+            animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        .icon-box-alert {
+            width: 75px;
+            height: 75px;
+            background: rgba(239, 68, 68, 0.15);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1.2rem auto;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes popIn {
+            to { transform: scale(1); }
+        }
+    </style>
+</head>
+<body class="p-3 p-md-4">
+
+    <!-- Capa de Bloqueo Transparente con Modal -->
+    <div id="bloqueoServicioOverlay">
+        <div class="modal-bloqueo">
+            <div class="icon-box-alert">
+                <i class="bi bi-shield-lock-fill text-danger fs-1"></i>
+            </div>
+            <h3 class="fw-bold text-white mb-2">Servicio Suspendido</h3>
+            <p class="text-secondary small mb-4">
+                El acceso a la plataforma ha sido pausado. Si eres el dueño del establecimiento, ingresa el código de desbloqueo proporcionado por el desarrollador para restaurar el servicio.
+            </p>
+            <div class="mb-3">
+                <input type="password" id="inputCodigoReactivacion" class="form-control text-center bg-dark text-white border-secondary py-2 fs-5" placeholder="• • • • • •" style="letter-spacing: 4px;">
+            </div>
+            <button class="btn btn-danger w-100 fw-bold py-2.5 shadow" onclick="reactivarServicio()">
+                <i class="bi bi-key-fill me-2"></i>Desbloquear Sistema
+            </button>
+            <div id="msgErrorCodigo" class="text-danger small mt-3 d-none">
+                <i class="bi bi-exclamation-circle-fill me-1"></i>Código incorrecto. Verifica e inténtalo nuevamente.
+            </div>
+        </div>
+    </div>
+
+    <div class="container-fluid">
+        <!-- Encabezado -->
+        <div class="header-dueno p-4 mb-4 d-flex justify-content-between align-items-center shadow-sm">
+            <div>
+                <h2 class="fw-bold mb-1 text-white"><i class="bi bi-shop text-warning me-2"></i>Panel de Control del Dueño</h2>
+                <p class="text-muted mb-0 small">Panadería El Buen Pan — Gestión Operativa</p>
+            </div>
+            <button class="btn btn-outline-light btn-sm fw-semibold" onclick="cargarTodo()"><i class="bi bi-arrow-clockwise me-1"></i>Actualizar Vista</button>
+        </div>
+
+        <!-- Fila de Tarjetas Métricas -->
+        <div class="row g-3 mb-4">
+            <div class="col-md-4">
+                <div class="card card-custom card-menu p-3 h-100 border-start border-4 border-info">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="text-muted fw-semibold small">Estado del Sistema</span>
+                        <i class="bi bi-cpu fs-4 text-info"></i>
+                    </div>
+                    <div class="mt-2">
+                        <span id="badgeEstadoServicio" class="badge bg-secondary fs-6">Cargando...</span>
+                    </div>
+                    <small class="text-muted mt-2 d-block">Licencia de software activa</small>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card card-custom card-menu p-3 h-100 border-start border-4 border-warning">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="text-muted fw-semibold small">Comisión por Servicio (0.9%)</span>
+                        <i class="bi bi-receipt-cutoff fs-4 text-warning"></i>
+                    </div>
+                    <h3 class="fw-bold text-warning my-2" id="txtComisionAcumulada">$0</h3>
+                    <small class="text-muted">Ventas semana: <strong class="text-white" id="txtVentasSemana">$0</strong></small>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card card-custom card-menu p-3 h-100 border-start border-4 border-success">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="text-muted fw-semibold small">Cierres de Caja</span>
+                        <i class="bi bi-journal-check fs-4 text-success"></i>
+                    </div>
+                    <h3 class="fw-bold text-success my-2" id="txtTotalCierres">0</h3>
+                    <button class="btn btn-sm btn-outline-info mt-1" type="button" data-bs-toggle="collapse" data-bs-target="#collapseCierres">
+                        <i class="bi bi-eye me-1"></i>Ver / Ocultar Historial
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Módulo Desplegable: Historial de Cierres de Caja -->
+        <div class="collapse mb-4" id="collapseCierres">
+            <div class="card card-custom card-menu p-4 border-start border-4 border-primary">
+                <h5 class="fw-bold text-white mb-3"><i class="bi bi-clock-history text-primary me-2"></i>Historial Consolidado de Cierres</h5>
+                <div class="table-responsive">
+                    <table class="table table-dark-custom align-middle">
+                        <thead>
+                            <tr>
+                                <th>Fecha</th>
+                                <th>Hora</th>
+                                <th>Pedidos</th>
+                                <th>Productos Vendidos</th>
+                                <th>Total Recaudado</th>
+                                <th>Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tablaCierres">
+                            <tr><td colspan="6" class="text-center text-muted py-3">Cargando cierres...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-4">
+            <!-- Columna Izquierda: Gestión de Productos del Menú -->
+            <div class="col-lg-5">
+                <div class="card card-custom card-menu p-4 mb-4">
+                    <h5 class="fw-bold text-white mb-3"><i class="bi bi-plus-circle text-info me-2"></i>Agregar Producto al Menú</h5>
+                    <form id="formProducto" onsubmit="guardarProducto(event)" enctype="multipart/form-data">
+                        <div class="mb-3">
+                            <label class="form-label small fw-semibold text-muted">Nombre del Producto</label>
+                            <input type="text" id="nombreProducto" class="form-control bg-dark text-white border-secondary" placeholder="Ej: Pan de Bono, Pastel..." required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small fw-semibold text-muted">Precio ($ COP)</label>
+                            <input type="number" id="precioProducto" class="form-control bg-dark text-white border-secondary" placeholder="Ej: 2000" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small fw-semibold text-muted">Imagen del Producto (Foto local)</label>
+                            <input type="file" id="fotoProducto" class="form-control bg-dark text-white border-secondary" accept="image/*">
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100 fw-bold"><i class="bi bi-cloud-upload me-2"></i>Guardar en Menú</button>
+                    </form>
+                </div>
+
+                <!-- Lista de Productos Existentes -->
+                <div class="card card-custom card-menu p-4">
+                    <h5 class="fw-bold text-white mb-3"><i class="bi bi-list-stars text-warning me-2"></i>Catálogo Activo</h5>
+                    <div id="listaProductos" class="list-group list-group-flush">
+                        <p class="text-muted small">Cargando catálogo...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Columna Derecha: Pedidos Registrados y Cierre de Caja -->
+            <div class="col-lg-7">
+                <div class="card card-custom card-pedidos p-4">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="fw-bold text-white mb-0"><i class="bi bi-receipt text-success me-2"></i>Pedidos en Sistema (Pantalla Actual)</h5>
+                        <button class="btn btn-success btn-sm fw-bold px-3 py-2" onclick="procesarCierreCaja()">
+                            <i class="bi bi-cash-stack me-1"></i>Hacer Cierre de Caja
+                        </button>
+                    </div>
+                    
+                    <div class="table-responsive">
+                        <table class="table table-dark-custom align-middle">
+                            <thead>
+                                <tr>
+                                    <th>Cliente y Datos de Envío</th>
+                                    <th>Detalle</th>
+                                    <th>Total</th>
+                                    <th>Estado</th>
+                                    <th>Acción</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tablaPedidos">
+                                <tr><td colspan="5" class="text-center text-muted py-4">Cargando pedidos...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        async function obtenerEstadoServicio() {
+            try {
+                const res = await fetch('/api/estado-servicio');
+                const data = await res.json();
+                const badge = document.getElementById('badgeEstadoServicio');
+                const overlay = document.getElementById('bloqueoServicioOverlay');
+
+                if (data.estado === 'activo') {
+                    badge.className = 'badge bg-success fs-6';
+                    badge.textContent = 'Servicio Activo';
+                    overlay.style.display = 'none';
+                } else if (data.estado === 'advertencia') {
+                    badge.className = 'badge bg-warning text-dark fs-6';
+                    badge.textContent = 'Pago Próximo a Vencer';
+                    overlay.style.display = 'none';
+                } else {
+                    badge.className = 'badge bg-danger fs-6';
+                    badge.textContent = 'Servicio Suspendido';
+                    // Muestra la capa emergente bloqueante
+                    overlay.style.display = 'flex';
+                }
+            } catch (err) { console.error(err); }
+        }
+
+        async function reactivarServicio() {
+            const codigo = document.getElementById('inputCodigoReactivacion').value;
+            const msgError = document.getElementById('msgErrorCodigo');
+            msgError.classList.add('d-none');
+
+            try {
+                const res = await fetch('/api/estado-servicio/reactivar', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ codigo })
+                });
+                const data = await res.json();
+
+                if (res.ok && data.exito) {
+                    document.getElementById('inputCodigoReactivacion').value = '';
+                    obtenerEstadoServicio();
+                } else {
+                    msgError.classList.remove('d-none');
+                }
+            } catch (err) {
+                alert("Error de conexión al verificar el código.");
+            }
+        }
+
+        async function cargarComisiones() {
+            try {
+                const res = await fetch('/api/comisiones/semanal');
+                const data = await res.json();
+                document.getElementById('txtComisionAcumulada').textContent = '$' + Number(data.acumuladoComision || 0).toLocaleString('es-CO');
+                document.getElementById('txtVentasSemana').textContent = '$' + Number(data.totalVentasSemana || 0).toLocaleString('es-CO');
+            } catch (err) { console.error(err); }
+        }
+
+        async function cargarProductos() {
+            try {
+                const res = await fetch('/api/productos');
+                const productos = await res.json();
+                const cont = document.getElementById('listaProductos');
+
+                if (!productos || productos.length === 0) {
+                    cont.innerHTML = '<p class="text-muted small">No hay productos registrados en el menú.</p>';
+                    return;
+                }
+
+                cont.innerHTML = productos.map(p => `
+                    <div class="list-group-item bg-transparent text-white border-secondary d-flex justify-content-between align-items-center px-0 py-2">
+                        <div class="d-flex align-items-center gap-3">
+                            <img src="${p.imagen}" class="img-producto" alt="${p.nombre}">
+                            <div>
+                                <strong class="d-block text-white">${p.nombre}</strong>
+                                <span class="text-success small fw-semibold">$${Number(p.precio).toLocaleString('es-CO')}</span>
+                            </div>
+                        </div>
+                        <button class="btn btn-outline-danger btn-sm" onclick="eliminarProducto('${p._id}')"><i class="bi bi-trash"></i></button>
+                    </div>
+                `).join('');
+            } catch (err) { console.error(err); }
+        }
+
+        async function guardarProducto(e) {
+            e.preventDefault();
+            const formData = new FormData();
+            formData.append('nombre', document.getElementById('nombreProducto').value);
+            formData.append('precio', document.getElementById('precioProducto').value);
+            
+            const fileInput = document.getElementById('fotoProducto');
+            if (fileInput.files[0]) {
+                formData.append('foto', fileInput.files[0]);
+            }
+
+            try {
+                const res = await fetch('/api/productos', { method: 'POST', body: formData });
+                const data = await res.json();
+                if (res.ok) {
+                    document.getElementById('formProducto').reset();
+                    cargarProductos();
+                } else {
+                    alert("Error: " + (data.error || "No se pudo guardar el producto"));
+                }
+            } catch (err) { alert("Error al subir el producto."); }
+        }
+
+        async function eliminarProducto(id) {
+            if (!confirm("¿Deseas eliminar este producto del menú?")) return;
+            try {
+                const res = await fetch(`/api/productos/${id}`, { method: 'DELETE' });
+                if (res.ok) cargarProductos();
+            } catch (err) { alert("Error al eliminar."); }
+        }
+
+        async function cargarPedidos() {
+            try {
+                const res = await fetch('/api/pedidos');
+                const pedidos = await res.json();
+                const tbody = document.getElementById('tablaPedidos');
+
+                if (!pedidos || pedidos.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-4">No hay pedidos pendientes en pantalla.</td></tr>';
+                    return;
+                }
+
+                const pedidosOrdenados = [...pedidos].reverse();
+
+                tbody.innerHTML = pedidosOrdenados.map(p => {
+                    const itemsText = Array.isArray(p.items) ? p.items.join(', ') : 'Sin detalle';
+                    const esCancelado = p.estado === 'Cancelado';
+                    const esEntregado = p.estado === 'Entregado';
+                    
+                    let infoClienteHtml = '<span class="text-muted">Mesa / Mostrador</span>';
+                    if (p.cliente) {
+                        if (typeof p.cliente === 'object') {
+                            const nombre = p.cliente.nombre || 'Cliente';
+                            const direccion = p.cliente.direccion ? `<br><small class="text-info"><i class="bi bi-geo-alt"></i> ${p.cliente.direccion}</small>` : '';
+                            const telefono = p.cliente.telefono ? `<br><small class="telefono-resaltado"><i class="bi bi-telephone-fill"></i> ${p.cliente.telefono}</small>` : '';
+                            const notas = p.cliente.notas ? `<br><small class="text-warning"><i class="bi bi-chat-left-text"></i> ${p.cliente.notas}</small>` : '';
+                            infoClienteHtml = `<div class="info-cliente-box"><strong class="text-white">${nombre}</strong>${direccion}${telefono}${notas}</div>`;
+                        } else {
+                            infoClienteHtml = `<div class="info-cliente-box"><strong class="text-white">${p.cliente}</strong></div>`;
+                        }
+                    }
+
+                    let badgeEstado = `<span class="badge bg-warning text-dark">${p.estado}</span>`;
+                    if (esEntregado) badgeEstado = `<span class="badge bg-success">${p.estado}</span>`;
+                    if (esCancelado) badgeEstado = `<span class="badge bg-danger text-white"><i class="bi bi-x-circle-fill me-1"></i>CANCELADO POR EL CLIENTE</span>`;
+
+                    let accionHtml = `<button class="btn btn-sm btn-outline-success" onclick="cambiarEstadoPedido('${p._id}', 'Entregado')">Marcar Entregado</button>`;
+                    if (esEntregado) accionHtml = `<i class="bi bi-check-all text-success fs-5"></i>`;
+                    if (esCancelado) accionHtml = `<span class="badge bg-secondary">Inactivo</span>`;
+
+                    return `
+                        <tr class="${esCancelado ? 'opacity-50 table-danger' : ''}">
+                            <td>${infoClienteHtml}</td>
+                            <td class="small text-slate-300">${itemsText}</td>
+                            <td class="fw-bold ${esCancelado ? 'text-muted' : 'text-success'}">${Number(p.total || 0).toLocaleString('es-CO')}</td>
+                            <td>${badgeEstado}</td>
+                            <td>${accionHtml}</td>
+                        </tr>
+                    `;
+                }).join('');
+            } catch (err) { console.error(err); }
+        }
+
+        async function cambiarEstadoPedido(id, nuevoEstado) {
+            try {
+                const res = await fetch(`/api/pedidos/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ estado: nuevoEstado })
+                });
+                if (res.ok) {
+                    cargarPedidos();
+                    cargarComisiones();
+                }
+            } catch (err) { alert("Error al actualizar pedido."); }
+        }
+
+        async function procesarCierreCaja() {
+            if (!confirm("¿Deseas realizar el cierre de caja? Esto guardará el resumen diario y limpiará la pantalla de pedidos.")) return;
+            try {
+                const res = await fetch('/api/cierres/procesar', { method: 'POST' });
+                const data = await res.json();
+                if (data.exito) {
+                    alert(data.mensaje);
+                    cargarTodo();
+                } else {
+                    alert("Error: " + data.error);
+                }
+            } catch (err) { alert("Error al procesar el cierre."); }
+        }
+
+        async function cargarCierres() {
+            try {
+                const res = await fetch('/api/cierres');
+                const cierres = await res.json();
+                const tbody = document.getElementById('tablaCierres');
+                document.getElementById('txtTotalCierres').textContent = cierres.length;
+
+                if (!cierres || cierres.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-3">No hay cierres registrados aún.</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = cierres.map(c => {
+                    let productos = c.productosVendidos && typeof c.productosVendidos === 'object'
+                        ? Object.entries(c.productosVendidos).map(([p, k]) => `<span class="badge bg-dark border border-secondary text-white me-1 mb-1">${p}: ${k}</span>`).join('')
+                        : 'Sin detalle';
+
+                    return `
+                        <tr>
+                            <td>${c.fechaCierre || 'N/A'}</td>
+                            <td>${c.horaCierre || 'N/A'}</td>
+                            <td><span class="badge bg-primary">${c.totalPedidos || 0}</span></td>
+                            <td>${productos}</td>
+                            <td class="fw-bold text-success">$${Number(c.totalVentas || 0).toLocaleString('es-CO')}</td>
+                            <td>
+                                <button class="btn btn-outline-danger btn-sm" onclick="eliminarCierre('${c._id}')">
+                                    <i class="bi bi-trash"></i> Eliminar
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+            } catch (err) { console.error(err); }
+        }
+
+        async function eliminarCierre(id) {
+            if (!confirm("¿Estás seguro de borrar este registro del historial de cierres?")) return;
+            try {
+                const res = await fetch(`/api/cierres/${id}`, { method: 'DELETE' });
+                const data = await res.json();
+                if (res.ok && data.exito) {
+                    cargarCierres();
+                } else {
+                    alert("Error al eliminar cierre: " + (data.error || "No autorizado"));
+                }
+            } catch (err) { alert("Error al eliminar cierre."); }
+        }
+
+        function cargarTodo() {
+            obtenerEstadoServicio();
+            cargarComisiones();
+            cargarProductos();
+            cargarPedidos();
+            cargarCierres();
+        }
+
+        document.addEventListener('DOMContentLoaded', cargarTodo);
+    </script>
+</body>
+</html>

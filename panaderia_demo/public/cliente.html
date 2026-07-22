@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panadería El Buen Pan — Pedidos en Línea</title>
+    <!-- Tailwind CSS v4 CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <!-- SDK Oficial de Google Sign-In -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+</head>
+<body class="bg-slate-900 text-slate-100 font-sans antialiased selection:bg-amber-500 selection:text-white min-h-screen flex flex-col">
+
+    <!-- 🔒 CAPA DE MANTENIMIENTO -->
+    <div id="bloqueo-servicio-cliente" class="hidden fixed inset-0 bg-slate-950/95 backdrop-blur-md z-50 flex-col items-center justify-center p-6 text-center">
+        <div class="max-w-md bg-slate-900 p-8 rounded-3xl border border-amber-500/20 shadow-2xl">
+            <span class="text-6xl block mb-4 animate-bounce">🍞</span>
+            <h2 class="text-2xl font-black text-amber-400 mb-2">Plataforma en Mantenimiento</h2>
+            <p class="text-xs text-slate-400 leading-relaxed">
+                Estamos realizando actualizaciones técnicas para mejorar la experiencia de tus pedidos. Por favor, vuelve a intentarlo en unos minutos.
+            </p>
+        </div>
+    </div>
+
+    <!-- ENCABEZADO Y PORTADA (HERO) -->
+    <header class="relative bg-gradient-to-b from-amber-950 via-slate-900 to-slate-900 border-b border-slate-800/80 pb-12 pt-6">
+        <!-- Navegación Superior -->
+        <nav class="container mx-auto px-4 max-w-6xl flex justify-between items-center mb-8">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-amber-500/20 border border-amber-500/40 rounded-2xl flex items-center justify-center text-xl">
+                    🍞
+                </div>
+                <div>
+                    <h1 class="text-lg font-black tracking-tight text-white leading-none">EL BUEN PAN</h1>
+                    <span class="text-[10px] font-semibold text-amber-500 tracking-wider uppercase">Artesanal & Fresco</span>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-3">
+                <!-- Estado de la Sesión Google -->
+                <div id="contenedor-usuario-google" class="flex items-center gap-2">
+                    <button id="btn-login-fake" onclick="abrirModalLogin()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition cursor-pointer shadow-sm">
+                        <svg class="w-4 h-4" viewBox="0 0 24 24">
+                            <path fill="#EA4335" d="M12 5c1.6 0 3 .6 4.1 1.6l3.1-3.1C17.3 1.8 14.8 1 12 1 7.5 1 3.7 3.6 1.9 7.3l3.7 2.9C6.5 7.2 9 5 12 5z"/>
+                            <path fill="#4285F4" d="M23.5 12.3c0-.8-.1-1.6-.2-2.3H12v4.5h6.5c-.3 1.5-1.1 2.8-2.4 3.7l3.7 2.9c2.2-2 3.7-5 3.7-8.8z"/>
+                            <path fill="#FBBC05" d="M5.6 14.8c-.2-.7-.4-1.5-.4-2.3s.2-1.6.4-2.3L1.9 7.3C.7 9.7 0 10.8 0 12s.7 2.3 1.9 4.7l3.7-2.9z"/>
+                            <path fill="#34A853" d="M12 23c3.2 0 6-1.1 8-3l-3.7-2.9c-1.1.7-2.5 1.2-4.3 1.2-3 0-5.5-2.2-6.4-5.2L1.9 16C3.7 19.7 7.5 23 12 23z"/>
+                        </svg>
+                        <span>Ingresar con Google</span>
+                    </button>
+                </div>
+
+                <!-- Botón Carrito -->
+                <button onclick="alternarCarrito()" class="bg-amber-600 hover:bg-amber-500 text-white px-4 py-2 rounded-xl text-xs font-black flex items-center gap-2 transition cursor-pointer shadow-lg shadow-amber-900/30">
+                    🛒 <span id="btn-carrito-texto">Carrito (0)</span>
+                </button>
+            </div>
+        </nav>
+
+        <!-- Portada Principal (Hero Banner) -->
+        <div class="container mx-auto px-4 max-w-6xl text-center md:text-left grid grid-cols-1 md:grid-cols-2 items-center gap-8 pt-4">
+            <div class="space-y-4">
+                <span class="inline-block bg-amber-500/10 text-amber-400 border border-amber-500/20 text-[11px] font-bold px-3 py-1 rounded-full uppercase tracking-widest">
+                    🔥 Recién horneado hoy
+                </span>
+                <h2 class="text-3xl md:text-5xl font-black text-white tracking-tight leading-tight">
+                    Sabor artesanal <br class="hidden md:inline"><span class="text-amber-500">directo a tu mesa.</span>
+                </h2>
+                <p class="text-slate-400 text-sm max-w-lg leading-relaxed">
+                    Selecciona tus panes preferidos, personaliza tu orden y recibe todo recién hecho con la mejor calidad local.
+                </p>
+            </div>
+            <div class="hidden md:flex justify-end">
+                <div class="relative group">
+                    <div class="absolute -inset-1 bg-gradient-to-r from-amber-600 to-amber-400 rounded-3xl blur-md opacity-25 group-hover:opacity-40 transition"></div>
+                    <img src="https://images.unsplash.com/photo-1509440159596-0249088772ff?w=600&q=80" alt="Pan Artesanal" class="relative rounded-3xl w-80 h-52 object-cover border border-slate-700 shadow-2xl">
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- MENU PRINCIPAL -->
+    <main class="container mx-auto px-4 py-10 max-w-6xl flex-1">
+        <div class="flex items-center justify-between mb-8 border-b border-slate-800 pb-4">
+            <h3 class="text-xl font-extrabold text-white flex items-center gap-2">
+                ✨ Menú Disponible
+            </h3>
+            <span class="text-xs text-slate-500 font-medium">Precios en moneda local</span>
+        </div>
+
+        <!-- QUADRÍCULA DE PRODUCTOS -->
+        <div id="contenedor-menu" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- Productos renderizados con JS -->
+        </div>
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="bg-slate-950 border-t border-slate-800/60 py-6 text-center text-xs text-slate-500">
+        <p>© 2026 Panadería El Buen Pan — Sistema de Pedidos Locales</p>
+    </footer>
+
+    <!-- MODAL INICIO DE SESIÓN ELEGANTE -->
+    <div id="modal-login-google" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+        <div class="bg-slate-900 border border-slate-800 w-full max-w-sm rounded-3xl p-6 shadow-2xl space-y-5 relative">
+            <button onclick="cerrarModalLogin()" class="absolute top-4 right-4 text-slate-400 hover:text-white font-bold cursor-pointer">✕</button>
+
+            <div class="text-center space-y-2">
+                <div class="w-12 h-12 bg-amber-500/10 border border-amber-500/30 rounded-2xl flex items-center justify-center text-2xl mx-auto">
+                    🔑
+                </div>
+                <h3 class="text-lg font-black text-white">Iniciar Sesión</h3>
+                <p class="text-xs text-slate-400">Ingresa tu correo para identificarte en tus pedidos.</p>
+            </div>
+
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-1">Correo Electrónico:</label>
+                    <input type="email" id="input-email-google" class="w-full bg-slate-800 border border-slate-700 p-3 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 transition" placeholder="ejemplo@gmail.com">
+                </div>
+                
+                <button onclick="confirmarGoogleAuth()" class="w-full bg-amber-600 hover:bg-amber-500 text-white font-bold py-3 rounded-xl text-xs transition cursor-pointer shadow-lg shadow-amber-900/30">
+                    Continuar con Google
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL DEL CARRITO -->
+    <div id="modal-carrito" class="fixed inset-0 bg-slate-950/80 backdrop-blur-xs hidden justify-end z-50 transition-all">
+        <div class="bg-slate-900 border-l border-slate-800 w-full max-w-md h-full shadow-2xl flex flex-col p-6">
+            <div class="flex justify-between items-center border-b border-slate-800 pb-4 mb-4">
+                <h3 class="text-base font-black text-white flex items-center gap-2">🛒 Tu Orden</h3>
+                <button onclick="alternarCarrito()" class="text-slate-400 hover:text-white font-bold text-lg cursor-pointer">✕</button>
+            </div>
+
+            <!-- Lista de Ítems -->
+            <div id="elementos-carrito" class="flex-1 overflow-y-auto space-y-3 pr-1 text-xs"></div>
+
+            <!-- Datos de Entrega -->
+            <div class="border-t border-slate-800 pt-4 mt-4 space-y-2">
+                <p class="text-[11px] font-bold text-amber-500 uppercase tracking-wider">📍 Datos de Entrega / Contacto:</p>
+                <input type="text" id="c-nombre" class="w-full bg-slate-800 border border-slate-700 p-2.5 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 transition" placeholder="Tu Nombre Completo">
+                <input type="text" id="c-telefono" class="w-full bg-slate-800 border border-slate-700 p-2.5 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 transition" placeholder="Teléfono / WhatsApp">
+                <input type="text" id="c-direccion" class="w-full bg-slate-800 border border-slate-700 p-2.5 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 transition" placeholder="Dirección de Domicilio o Mesa">
+            </div>
+
+            <!-- Total y Confirmar -->
+            <div class="border-t border-slate-800 pt-4 mt-4 space-y-3">
+                <div class="flex justify-between items-center">
+                    <span class="text-xs font-semibold text-slate-400">Total a Pagar:</span>
+                    <span id="total-precio" class="text-2xl font-black text-amber-400">$0</span>
+                </div>
+                <button onclick="enviarPedido()" class="w-full bg-amber-600 hover:bg-amber-500 text-white font-black py-3 rounded-xl shadow-lg transition cursor-pointer text-xs uppercase tracking-wider flex justify-center items-center gap-2">
+                    🚀 Confirmar y Enviar Orden
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SCRIPT DE LÓGICA -->
+    <script>
+        let carrito = [];
+        let idPedidoActivo = localStorage.getItem('idPedidoActivo') || null;
+        let usuarioGoogle = JSON.parse(localStorage.getItem('usuarioGoogle') || 'null');
+
+        function actualizarUIUsuario() {
+            const contenedor = document.getElementById('contenedor-usuario-google');
+            if (usuarioGoogle) {
+                contenedor.innerHTML = `
+                    <div class="flex items-center gap-2 bg-slate-800/80 border border-slate-700/80 px-2.5 py-1.5 rounded-xl">
+                        <img src="${usuarioGoogle.foto}" class="w-6 h-6 rounded-full border border-amber-500/40">
+                        <span class="text-xs font-bold text-slate-200 hidden sm:inline">${usuarioGoogle.nombre}</span>
+                        <button onclick="cerrarSesionGoogle()" class="text-slate-400 hover:text-red-400 font-bold text-xs ml-1 cursor-pointer">✕</button>
+                    </div>
+                `;
+                const cNombre = document.getElementById('c-nombre');
+                if (cNombre && !cNombre.value) cNombre.value = usuarioGoogle.nombre;
+            } else {
+                contenedor.innerHTML = `
+                    <button id="btn-login-fake" onclick="abrirModalLogin()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-2 transition cursor-pointer shadow-sm">
+                        <svg class="w-3.5 h-3.5" viewBox="0 0 24 24">
+                            <path fill="#EA4335" d="M12 5c1.6 0 3 .6 4.1 1.6l3.1-3.1C17.3 1.8 14.8 1 12 1 7.5 1 3.7 3.6 1.9 7.3l3.7 2.9C6.5 7.2 9 5 12 5z"/>
+                            <path fill="#4285F4" d="M23.5 12.3c0-.8-.1-1.6-.2-2.3H12v4.5h6.5c-.3 1.5-1.1 2.8-2.4 3.7l3.7 2.9c2.2-2 3.7-5 3.7-8.8z"/>
+                            <path fill="#FBBC05" d="M5.6 14.8c-.2-.7-.4-1.5-.4-2.3s.2-1.6.4-2.3L1.9 7.3C.7 9.7 0 10.8 0 12s.7 2.3 1.9 4.7l3.7-2.9z"/>
+                            <path fill="#34A853" d="M12 23c3.2 0 6-1.1 8-3l-3.7-2.9c-1.1.7-2.5 1.2-4.3 1.2-3 0-5.5-2.2-6.4-5.2L1.9 16C3.7 19.7 7.5 23 12 23z"/>
+                        </svg>
+                        <span>Google</span>
+                    </button>
+                `;
+            }
+        }
+
+        function abrirModalLogin() {
+            const modal = document.getElementById('modal-login-google');
+            if (modal) {
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+            }
+        }
+
+        function cerrarModalLogin() {
+            const modal = document.getElementById('modal-login-google');
+            if (modal) {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }
+        }
+
+        function confirmarGoogleAuth() {
+            const input = document.getElementById('input-email-google');
+            const correo = input ? input.value.trim() : '';
+
+            if (!correo || !correo.includes('@')) {
+                alert("Por favor ingresa un correo electrónico válido.");
+                return;
+            }
+
+            const nombre = correo.split('@')[0];
+            usuarioGoogle = {
+                nombre: nombre.charAt(0).toUpperCase() + nombre.slice(1),
+                email: correo,
+                foto: `https://api.dicebear.com/7.x/bottts/svg?seed=${nombre}`
+            };
+
+            localStorage.setItem('usuarioGoogle', JSON.stringify(usuarioGoogle));
+            cerrarModalLogin();
+            actualizarUIUsuario();
+        }
+
+        function cerrarSesionGoogle() {
+            localStorage.removeItem('usuarioGoogle');
+            usuarioGoogle = null;
+            actualizarUIUsuario();
+        }
+
+        function verificarBloqueoCliente() {
+            fetch('/api/estado-servicio')
+            .then(res => res.json())
+            .then(datos => {
+                const capaBloqueo = document.getElementById('bloqueo-servicio-cliente');
+                if (datos.estado === "suspendido") {
+                    capaBloqueo.classList.remove('hidden');
+                    capaBloqueo.classList.add('flex');
+                } else {
+                    capaBloqueo.classList.add('hidden');
+                    capaBloqueo.classList.remove('flex');
+                }
+            })
+            .catch(err => console.error("Error al validar disponibilidad", err));
+        }
+
+        function cargarMenu() {
+            verificarBloqueoCliente();
+
+            fetch('/api/productos')
+            .then(res => res.json())
+            .then(productos => {
+                const contenedor = document.getElementById('contenedor-menu');
+                if(!productos || productos.length === 0) {
+                    contenedor.innerHTML = `<p class="col-span-full text-center py-12 text-slate-500 font-medium bg-slate-900/60 rounded-3xl border border-dashed border-slate-800">Aún no hay productos registrados en el menú.</p>`;
+                    return;
+                }
+
+                contenedor.innerHTML = productos.map(p => `
+                    <div class="bg-slate-800/60 border border-slate-700/60 hover:border-amber-500/40 rounded-3xl overflow-hidden transition-all duration-300 flex flex-col justify-between group">
+                        <div class="relative overflow-hidden h-44 bg-slate-950">
+                            <img src="${p.imagen}" class="w-full h-full object-cover group-hover:scale-105 transition duration-500" alt="${p.nombre}" onerror="this.src='https://images.unsplash.com/photo-1549931319-a545dcf3bc73?w=500&q=80'">
+                        </div>
+                        
+                        <div class="p-5 flex-1 flex flex-col justify-between space-y-4">
+                            <div>
+                                <h4 class="font-black text-white text-base mb-1">${p.nombre}</h4>
+                                <p class="text-amber-400 font-extrabold text-lg">$${Number(p.precio || 0).toLocaleString()}</p>
+                            </div>
+
+                            <div class="space-y-3">
+                                <div>
+                                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">¿Cómo lo quieres? (Opcional):</label>
+                                    <input type="text" id="nota-${p._id}" class="w-full text-xs bg-slate-900/90 border border-slate-700/80 p-2 rounded-xl text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-amber-500 transition" placeholder="Ej: Bien tostado, caliente, sin azúcar...">
+                                </div>
+                                
+                                <button onclick="agregarAlCarrito('${p._id}', '${p.nombre}', ${p.precio})" class="w-full bg-amber-600 hover:bg-amber-500 text-white font-bold py-2.5 rounded-xl text-xs transition cursor-pointer flex justify-center items-center gap-1.5 shadow-md">
+                                    ➕ Agregar a la Orden
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            })
+            .catch(err => console.error("Error al cargar el menú", err));
+        }
+
+        function agregarAlCarrito(id, nombre, precio) {
+            const inputNota = document.getElementById(`nota-${id}`);
+            const detalles = inputNota ? inputNota.value.trim() : '';
+            
+            let itemTexto = nombre;
+            if (detalles) {
+                itemTexto += ` (Nota: ${detalles})`;
+            }
+
+            carrito.push({ texto: itemTexto, precio: precio });
+            if (inputNota) inputNota.value = '';
+            actualizarInterfazCarrito();
+        }
+
+        function quitarDelCarrito(index) {
+            carrito.splice(index, 1);
+            actualizarInterfazCarrito();
+        }
+
+        function actualizarInterfazCarrito() {
+            const btnTexto = document.getElementById('btn-carrito-texto');
+            if (btnTexto) btnTexto.innerText = `Carrito (${carrito.length})`;
+            
+            const lista = document.getElementById('elementos-carrito');
+            const totalElemento = document.getElementById('total-precio');
+            
+            let total = 0;
+            if (!lista) return;
+
+            if (carrito.length === 0) {
+                lista.innerHTML = `<p class="text-center text-slate-500 py-8">Tu carrito está vacío.</p>`;
+                if (totalElemento) totalElemento.innerText = '$0';
+                return;
+            }
+
+            lista.innerHTML = carrito.map((item, index) => {
+                total += item.precio;
+                return `
+                    <div class="flex justify-between items-start bg-slate-800/80 p-3 rounded-2xl border border-slate-700/60">
+                        <div class="flex-1 pr-2">
+                            <p class="font-bold text-slate-200">${item.texto}</p>
+                            <p class="text-amber-400 font-semibold text-xs">$${Number(item.precio || 0).toLocaleString()}</p>
+                        </div>
+                        <button onclick="quitarDelCarrito(${index})" class="text-red-400 hover:text-red-300 font-bold px-1 cursor-pointer">🗑️</button>
+                    </div>
+                `;
+            }).join('');
+
+            if (totalElemento) totalElemento.innerText = '$' + total.toLocaleString();
+        }
+
+        function alternarCarrito() {
+            const modal = document.getElementById('modal-carrito');
+            if (modal) {
+                modal.classList.toggle('hidden');
+                modal.classList.toggle('flex');
+            }
+        }
+
+        function enviarPedido() {
+            if (carrito.length === 0) return alert("Agrega al menos un producto.");
+
+            if (!usuarioGoogle) {
+                abrirModalLogin();
+                return;
+            }
+
+            const nombreCli = document.getElementById('c-nombre')?.value.trim() || usuarioGoogle.nombre;
+            const telCli = document.getElementById('c-telefono')?.value.trim() || '';
+            const dirCli = document.getElementById('c-direccion')?.value.trim() || '';
+
+            let datosCliente = {
+                nombre: `${nombreCli} (${usuarioGoogle.email})`,
+                telefono: telCli || 'N/A',
+                direccion: dirCli || 'N/A'
+            };
+
+            const total = carrito.reduce((sum, item) => sum + item.precio, 0);
+            const itemsEnvio = carrito.map(item => item.texto);
+
+            fetch('/api/pedidos', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ items: itemsEnvio, total: total, cliente: datosCliente, estado: 'Pendiente' })
+            })
+            .then(res => {
+                if(res.status === 403) {
+                    throw new Error("Sistema suspendido por mantenimiento técnico.");
+                }
+                return res.json();
+            })
+            .then(data => {
+                alert("¡Pedido enviado con éxito a la panadería!");
+                if (data && data._id) {
+                    idPedidoActivo = data._id;
+                    localStorage.setItem('idPedidoActivo', idPedidoActivo);
+                }
+                carrito = [];
+                actualizarInterfazCarrito();
+                alternarCarrito();
+                if (document.getElementById('c-telefono')) document.getElementById('c-telefono').value = '';
+                if (document.getElementById('c-direccion')) document.getElementById('c-direccion').value = '';
+                monitorearEstadoPedido();
+            })
+            .catch(err => {
+                alert(err.message || "Error al procesar el pedido.");
+                verificarBloqueoCliente();
+            });
+        }
+
+        function monitorearEstadoPedido() {
+            if (!idPedidoActivo) return;
+
+            fetch('/api/pedidos')
+            .then(res => res.json())
+            .then(pedidos => {
+                const miPedido = Array.isArray(pedidos) ? pedidos.find(p => p._id === idPedidoActivo) : null;
+                let banner = document.getElementById('banner-estado-pedido');
+
+                if (!miPedido || miPedido.estado === 'Entregado') {
+                    localStorage.removeItem('idPedidoActivo');
+                    idPedidoActivo = null;
+                    if (banner) banner.remove();
+                    return;
+                }
+
+                if (!banner) {
+                    banner = document.createElement('div');
+                    banner.id = 'banner-estado-pedido';
+                    document.body.appendChild(banner);
+                }
+
+                if (miPedido.estado === 'Cancelado') {
+                    banner.className = 'fixed bottom-4 right-4 z-50 bg-red-950/90 border border-red-800 p-4 rounded-2xl shadow-2xl flex items-center justify-between gap-4 max-w-sm backdrop-blur-md';
+                    banner.innerHTML = `
+                        <div class="text-xs">
+                            <p class="font-black text-red-400">Pedido Cancelado</p>
+                            <p class="text-red-300">Tu pedido fue marcado como cancelado.</p>
+                        </div>
+                        <button onclick="limpiarPedidoActivo()" class="bg-red-600 hover:bg-red-500 text-white text-xs px-3 py-1.5 rounded-xl font-bold transition">Aceptar</button>
+                    `;
+                    return;
+                }
+
+                banner.className = 'fixed bottom-4 right-4 z-50 bg-slate-900/95 border border-amber-500/30 p-4 rounded-2xl shadow-2xl flex items-center gap-4 max-w-sm backdrop-blur-md';
+                banner.innerHTML = `
+                    <div class="text-xs flex-1">
+                        <p class="font-bold text-white">Pedido Activo en Curso</p>
+                        <p class="text-amber-400 font-semibold">Estado: ${miPedido.estado}</p>
+                    </div>
+                    <button onclick="cancelarPedidoCliente()" class="bg-red-600 hover:bg-red-500 text-white text-xs px-3 py-1.5 rounded-xl font-bold transition">
+                        Cancelar Pedido
+                    </button>
+                `;
+            })
+            .catch(err => console.error("Error al consultar pedido activo", err));
+        }
+
+        function cancelarPedidoCliente() {
+            if (!idPedidoActivo) return;
+            if (!confirm("¿Estás seguro de cancelar tu pedido en curso?")) return;
+
+            fetch(`/api/pedidos/${idPedidoActivo}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ estado: 'Cancelado' })
+            })
+            .then(res => {
+                if (res.ok) {
+                    alert("Pedido cancelado.");
+                    monitorearEstadoPedido();
+                } else {
+                    alert("No se pudo cancelar el pedido.");
+                }
+            })
+            .catch(err => alert("Error al conectar con el servidor."));
+        }
+
+        function limpiarPedidoActivo() {
+            localStorage.removeItem('idPedidoActivo');
+            idPedidoActivo = null;
+            const banner = document.getElementById('banner-estado-pedido');
+            if (banner) banner.remove();
+        }
+
+        // Inicialización
+        verificarBloqueoCliente();
+        cargarMenu();
+        actualizarUIUsuario();
+        monitorearEstadoPedido();
+
+        setInterval(() => {
+            verificarBloqueoCliente();
+            monitorearEstadoPedido();
+        }, 5000);
+    </script>
+</body>
+</html>

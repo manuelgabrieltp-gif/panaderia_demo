@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel Desarrollador - Manuel.G.T.P.</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <style>
+        body { background-color: #0f172a; color: #f8fafc; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .card-dark { background-color: #1e293b; border: 1px solid #334155; border-radius: 12px; }
+        .text-accent { color: #38bdf8; }
+        .btn-action { font-weight: 600; border-radius: 8px; }
+    </style>
+</head>
+<body class="p-3 p-md-5">
+
+    <div class="container" style="max-width: 800px;">
+        <!-- Encabezado Privado -->
+        <div class="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom border-secondary">
+            <div>
+                <h3 class="fw-bold mb-0 text-white"><i class="bi bi-shield-lock-fill text-accent me-2"></i>Panel Privado Desarrollador</h3>
+                <small class="text-muted">Software Control Center & Liquidación — Manuel.G.T.P. (SENA 2026)</small>
+            </div>
+            <span class="badge bg-danger px-3 py-2">Solo Acceso Autorizado</span>
+        </div>
+
+        <!-- Módulo de Autenticación -->
+        <div id="seccionLogin" class="card card-dark p-4 shadow-lg mb-4">
+            <h5 class="fw-bold text-white mb-3"><i class="bi bi-key me-2"></i>Iniciar Sesión de Administrador</h5>
+            <div class="input-group mb-3">
+                <input type="password" id="inputContrasenaAdmin" class="form-control bg-dark text-white border-secondary" placeholder="Ingrese contraseña master...">
+                <button class="btn btn-primary px-4 btn-action" onclick="autenticarPanel()"><i class="bi bi-box-arrow-in-right me-1"></i>Ingresar</button>
+            </div>
+            <div id="msgLoginError" class="text-danger small d-none"><i class="bi bi-exclamation-circle me-1"></i>Contraseña incorrecta. Acceso denegado.</div>
+        </div>
+
+        <!-- Contenido Protegido del Panel (Oculto por defecto) -->
+        <div id="seccionPanel" class="d-none">
+            
+            <!-- Fila de Resumen de Cuentas Semanales -->
+            <div class="row g-3 mb-4">
+                <div class="col-md-6">
+                    <div class="card card-dark p-3 border-start border-4 border-info">
+                        <span class="text-muted small fw-semibold">Comisión Acumulada A Cobrar (0.9%)</span>
+                        <h2 class="fw-bold text-info my-2" id="txtManuelComision">$0</h2>
+                        <small class="text-muted">Monto total a recaudar esta semana</small>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card card-dark p-3 border-start border-4 border-success">
+                        <span class="text-muted small fw-semibold">Ventas Brutas Negocio (Semana)</span>
+                        <h2 class="fw-bold text-success my-2" id="txtManuelVentas">$0</h2>
+                        <small class="text-muted">Base total procesada en el sistema</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Módulo de Estado y Código Habilitador -->
+            <div class="card card-dark p-4 mb-4">
+                <h5 class="fw-bold text-white mb-3"><i class="bi bi-sliders me-2"></i>Estado Operativo y Código de Pago</h5>
+                
+                <div class="row g-3 align-items-center mb-3">
+                    <div class="col-sm-6">
+                        <span class="text-muted d-block small">Estado del Servicio:</span>
+                        <span id="txtManuelEstado" class="badge bg-secondary fs-6 mt-1">Cargando...</span>
+                    </div>
+                    <div class="col-sm-6">
+                        <span class="text-muted d-block small">Próximo Vencimiento:</span>
+                        <strong class="text-white fs-6" id="txtManuelVencimiento">-----</strong>
+                    </div>
+                </div>
+
+                <div class="p-3 bg-dark rounded border border-secondary text-center my-2">
+                    <span class="text-muted d-block small mb-1">Código Semanal de Habilitación (5 Dígitos):</span>
+                    <span class="fs-2 fw-bold text-accent tracking-wider" id="txtManuelCodigo">-----</span>
+                    <small class="d-block text-muted mt-1">Suministrar este código al cliente al recibir el pago semanal por Nequi/Efectivo.</small>
+                </div>
+            </div>
+
+            <!-- Módulo de Acciones de Control -->
+            <div class="card card-dark p-4">
+                <h5 class="fw-bold text-white mb-3"><i class="bi bi-gear-wide-connected me-2"></i>Acciones Directas de Liquidación y Emergencia</h5>
+                
+                <div class="d-grid gap-3">
+                    <!-- Botón Principal: Liquidación y Reinicio a $0 -->
+                    <button class="btn btn-success btn-lg btn-action p-3" onclick="confirmarPagoYReiniciar()">
+                        <i class="bi bi-check-circle-fill me-2"></i>Registrar Pago Recibido y Reiniciar Semana ($0)
+                    </button>
+                    
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <button class="btn btn-outline-danger w-100 btn-action py-2" onclick="ejecutarAccionEmergencia('BLOQUEAR_EMERGENCIA')">
+                                <i class="bi bi-lock-fill me-1"></i>Bloqueo Inmediato
+                            </button>
+                        </div>
+                        <div class="col-6">
+                            <button class="btn btn-outline-warning w-100 btn-action py-2" onclick="ejecutarAccionEmergencia('DESBLOQUEAR_MANUAL')">
+                                <i class="bi bi-unlock-fill me-1"></i>Remover Bloqueo
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        let contrasenaGuardada = "";
+
+        async function autenticarPanel() {
+            const pass = document.getElementById('inputContrasenaAdmin').value.trim();
+            if (!pass) return;
+
+            try {
+                const res = await fetch('/api/manuel-panel', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ contrasena: pass })
+                });
+
+                const data = await res.json();
+
+                if (data.exito) {
+                    contrasenaGuardada = pass;
+                    document.getElementById('seccionLogin').classList.add('d-none');
+                    document.getElementById('seccionPanel').classList.remove('d-none');
+                    actualizarInterfazManuel(data);
+                } else {
+                    document.getElementById('msgLoginError').classList.remove('d-none');
+                }
+            } catch (err) {
+                alert("Error de conexión con el servidor.");
+            }
+        }
+
+        function actualizarInterfazManuel(data) {
+            document.getElementById('txtManuelComision').textContent = '$' + Number(data.acumuladoComision || 0).toLocaleString('es-CO');
+            document.getElementById('txtManuelVentas').textContent = '$' + Number(data.totalVentasSemana || 0).toLocaleString('es-CO');
+            document.getElementById('txtManuelVencimiento').textContent = data.proximoVencimiento || 'N/A';
+            document.getElementById('txtManuelCodigo').textContent = data.codigoHabilitacion || '-----';
+
+            const badge = document.getElementById('txtManuelEstado');
+            if (data.estadoActual === 'activo') {
+                badge.className = 'badge bg-success fs-6';
+                badge.textContent = 'Activo';
+            } else if (data.estadoActual === 'advertencia') {
+                badge.className = 'badge bg-warning text-dark fs-6';
+                badge.textContent = 'En Advertencia';
+            } else {
+                badge.className = 'badge bg-danger fs-6';
+                badge.textContent = 'Suspendido';
+            }
+        }
+
+        async function recargarDatosManuel() {
+            if (!contrasenaGuardada) return;
+            const res = await fetch('/api/manuel-panel', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ contrasena: contrasenaGuardada })
+            });
+            const data = await res.json();
+            if (data.exito) actualizarInterfazManuel(data);
+        }
+
+        async function confirmarPagoYReiniciar() {
+            if (!confirm("¿Confirmas que recibiste el pago semanal? Esto extenderá el servicio por 7 días y REINICIARÁ el saldo de comisión a $0.")) {
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/manuel-confirmar-pago', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ contrasena: contrasenaGuardada, accion: "CONFIRMAR_PAGO" })
+                });
+
+                const data = await res.json();
+                if (data.exito) {
+                    alert("✅ Pago registrado con éxito. Fecha extendida y saldo reiniciado a $0.");
+                    recargarDatosManuel();
+                } else {
+                    alert("Error: " + data.mensaje);
+                }
+            } catch (err) {
+                alert("Error de comunicación al procesar el pago.");
+            }
+        }
+
+        async function ejecutarAccionEmergencia(accion) {
+            try {
+                const res = await fetch('/api/manuel-confirmar-pago', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ contrasena: contrasenaGuardada, accion: accion })
+                });
+
+                const data = await res.json();
+                if (data.exito) {
+                    alert("Acción ejecutada: " + data.mensaje);
+                    recargarDatosManuel();
+                } else {
+                    alert("Error: " + data.mensaje);
+                }
+            } catch (err) {
+                alert("Error al ejecutar acción.");
+            }
+        }
+    </script>
+</body>
+</html>

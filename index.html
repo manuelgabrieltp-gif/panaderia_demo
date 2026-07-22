@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panadería El Buen Pan - Demo</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+</head>
+<body class="bg-amber-50/30 font-sans">
+
+    <!-- Encabezado -->
+    <header class="bg-amber-700 text-white p-4 shadow-md sticky top-0 z-50">
+        <div class="container mx-auto flex justify-between items-center">
+            <h1 class="text-xl font-bold">🍞 Panadería El Buen Pan</h1>
+            <button onclick="toggleCarrito()" class="bg-amber-800 hover:bg-amber-950 px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 transition-colors">
+                🛒 Carrito (<span id="cuenta-carrito">0</span>)
+            </button>
+        </div>
+    </header>
+
+    <!-- Contenido Principal -->
+    <main class="container mx-auto p-4 max-w-4xl">
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-amber-100 mb-6 text-center">
+            <h2 class="text-2xl font-bold text-amber-900">Productos Recién Horneados</h2>
+            <p class="text-gray-600 text-sm mt-1">Haz tu pedido local y recógelo en tienda sin filas.</p>
+        </div>
+        
+        <!-- Grid de Productos de Panadería -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6" id="lista-productos"></div>
+    </main>
+
+    <!-- Modal del Carrito -->
+    <div id="modal-carrito" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-xl max-w-md w-full p-6 shadow-xl relative">
+            <h3 class="text-xl font-bold text-gray-900 mb-4">Detalle de tu Pedido</h3>
+            <div id="items-carrito" class="space-y-3 max-h-60 overflow-y-auto mb-4"></div>
+            <div class="border-t pt-4">
+                <div class="flex justify-between font-bold text-lg text-gray-900 mb-4">
+                    <span>Total a pagar en tienda:</span>
+                    <span id="total-carrito">$0</span>
+                </div>
+                <button onclick="enviarPedido()" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg transition-colors shadow">
+                    Enviar Pedido por WhatsApp
+                </button>
+                <button onclick="toggleCarrito()" class="w-full mt-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-2 px-4 rounded-lg text-sm">
+                    Continuar Viendo
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Catálogo local de la panadería
+        const productos = [
+            { id: 1, nombre: "Pan Aliñado Familiar", precio: 5000, desc: "Pan suave relleno de queso y mantequilla." },
+            { id: 2, nombre: "Bolsa de Pan de Bono (6 und)", precio: 6000, desc: "Tradicionales, calientes y esponjosos." },
+            { id: 3, nombre: "Pastel de Pollo Especial", precio: 4500, desc: "Hojaldre crujiente con excelente relleno." },
+            { id: 4, nombre: "Torta de Tres Leches (Porción)", precio: 7000, desc: "Postre frío ideal para compartir." }
+        ];
+
+        let carrito = [];
+
+        function cargarProductos() {
+            const contenedor = document.getElementById('lista-productos');
+            contenedor.innerHTML = productos.map(p => `
+                <div class="bg-white rounded-xl shadow-sm border border-amber-100 p-5 flex flex-col justify-between hover:shadow-md transition-shadow">
+                    <div>
+                        <h3 class="text-lg font-bold text-gray-900">${p.nombre}</h3>
+                        <p class="text-gray-500 text-sm mt-1 mb-4">${p.desc}</p>
+                    </div>
+                    <div class="flex justify-between items-center mt-auto">
+                        <span class="text-xl font-extrabold text-amber-700">$${p.precio.toLocaleString()}</span>
+                        <button onclick="agregarAlCarrito(${p.id})" class="bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                            Agregar
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function agregarAlCarrito(id) {
+            const prod = productos.find(p => p.id === id);
+            carrito.push(prod);
+            actualizarInterfaz();
+        }
+
+        function actualizarInterfaz() {
+            document.getElementById('cuenta-carrito').innerText = carrito.length;
+            const contenedorItems = document.getElementById('items-carrito');
+            
+            if (carrito.length === 0) {
+                contenedorItems.innerHTML = '<p class="text-gray-500 text-sm text-center py-4">No has seleccionado panes aún.</p>';
+            } else {
+                contenedorItems.innerHTML = carrito.map((item, index) => `
+                    <div class="flex justify-between items-center text-sm border-b pb-2">
+                        <div>
+                            <p class="font-semibold text-gray-800">${item.nombre}</p>
+                            <p class="text-gray-500">$${item.precio.toLocaleString()}</p>
+                        </div>
+                        <button onclick="eliminarDelCarrito(${index})" class="text-red-500 hover:text-red-700 font-medium">Quitar</button>
+                    </div>
+                `).join('');
+            }
+
+            const total = carrito.reduce((sum, item) => sum + item.precio, 0);
+            document.getElementById('total-carrito').innerText = '$' + total.toLocaleString();
+        }
+
+        function eliminarDelCarrito(index) {
+            carrito.splice(index, 1);
+            actualizarInterfaz();
+        }
+
+        function toggleCarrito() {
+            document.getElementById('modal-carrito').classList.toggle('hidden');
+        }
+
+        function enviarPedido() {
+            if (carrito.length === 0) return alert("El carrito está vacío");
+            
+            let texto = "🍞 *Nuevo Pedido - Panadería El Buen Pan* 🍞\n\nMe gustaría encargar:\n";
+            carrito.forEach(item => {
+                texto += `- ${item.nombre} ($${item.precio})\n`;
+            });
+            
+            const total = carrito.reduce((sum, item) => sum + item.precio, 0);
+            texto += `\n💰 *Total a pagar en tienda:* $${total.toLocaleString()}\n\n_Pedido generado de forma segura desde la App Web Demo._`;
+            
+            // Número ficticio para la demostración legal del plan de negocios
+            const numeroTelefono = "573000000000"; 
+            const url = `https://wa.me/${numeroTelefono}?text=${encodeURIComponent(texto)}`;
+            window.open(url, '_blank');
+        }
+
+        cargarProductos();
+    </script>
+</body>
+</html>
